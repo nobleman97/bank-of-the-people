@@ -1,0 +1,85 @@
+name: ci-terraform
+
+on:
+  pull_request:
+    paths: ["infra/**", ".github/workflows/ci-terraform.yml"]
+  push:
+    branches: [main]
+    paths: ["infra/**", ".github/workflows/ci-terraform.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-terraform-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: "1.14.8"
+
+jobs:
+  validate:
+    name: fmt · validate · scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - run: terraform fmt -check -recursive infra
+
+      - name: validate all roots
+        run: |
+          set -e
+          for d in $(find infra/live -name '*.tf' -exec dirname {} \; | sort -u); do
+            echo "==> $d"
+            terraform -chdir="$d" init -backend=false -input=false >/dev/null
+            terraform -chdir="$d" validate
+          done
+
+      - uses: terraform-linters/setup-tflint@v4
+      - run: tflint --chdir=infra --recursive
+
+      - uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: infra
+
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra
+          framework: terraform
+
+      - name: conftest
+        if: ${{ hashFiles('policy/**/*.rego') != '' }}
+        run: |
+          curl -sSL -o /tmp/conftest.tgz \
+            https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_Linux_x86_64.tar.gz
+          tar -xzf /tmp/conftest.tgz -C /tmp conftest
+          /tmp/conftest test infra --policy policy
+
+  plan-global:
+    name: plan (global)
+    runs-on: ubuntu-latest
+    needs: validate
+    if: ${{ github.event_name == 'pull_request' && vars.AWS_PLAN_ROLE_ARN != '' }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - run: |
+          terraform -chdir=infra/live/global init -input=false
+          terraform -chdir=infra/live/global plan -input=false -no-color

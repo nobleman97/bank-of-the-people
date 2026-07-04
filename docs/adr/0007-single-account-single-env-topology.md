@@ -22,13 +22,22 @@ Run a **single AWS account** with a **single live environment at a time**, while
 Terraform **modules env-parameterized** so the multi-environment promotion path is fully
 demonstrable in code.
 
-- `infra/modules/*` are environment-agnostic; `infra/live/<env>/` (`dev`, `prod`) supply
-  per-env inputs via tfvars / workspaces and separate state keys.
+- `infra/modules/*` are environment-agnostic **definitions**; `infra/live/<scope>/` holds the
+  deployed **instances** — thin roots that call modules with concrete inputs and own their
+  state. `dev` and `prod` call the same modules with different tfvars, so promotion is a
+  config change, not a rewrite.
+- A third scope, **`infra/live/global/`**, holds **account-singleton** resources that belong to
+  no single environment: the **GitHub OIDC provider** (AWS permits exactly one per account per
+  URL) and the CI **`plan`/`apply` roles** (which *create* the environments, so they cannot be
+  owned by one). Putting these under `dev/` would make `prod`'s pipeline depend on `dev`'s
+  state and give teardown a cross-env blast radius. `global/` is bootstrapped once by a human;
+  everything else is then deployed keylessly by those roles. Future `global/` residents: shared
+  ECR repositories (a digest built once promotes across envs).
 - The CI/CD pipeline supports `dev → prod` promotion (same immutable image, promoted by
   environment-scoped apply with approval gates), even though only one environment is
   **materialized** during a given demo/recording session to control cost.
 - Environment isolation within the account is enforced by naming (`botp-<env>-*`), tags,
-  distinct state keys, and scoped IAM — not by account boundaries.
+  distinct state keys (`botp/<scope>/<component>`), and scoped IAM — not by account boundaries.
 
 ## Rationale
 
@@ -56,8 +65,11 @@ Negative / risks:
 
 In a regulated setting this would be a **multi-account AWS Organization**: separate dev and
 prod accounts (often per-workload), a management/shared-services account for state, ECR,
-and OIDC, SCP guardrails, and centralized logging. Stating this keeps the single-account
-choice legible as an intentional, cost-driven portfolio decision rather than a blind spot.
+and OIDC, SCP guardrails, and centralized logging. The `global/` scope maps directly onto
+that shared-services account — the same "account-singleton, deploys the environments" role,
+promoted from a state-key convention to a hard account boundary. Stating this keeps the
+single-account choice legible as an intentional, cost-driven portfolio decision rather than
+a blind spot.
 
 ## Alternatives considered
 

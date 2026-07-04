@@ -76,11 +76,18 @@ fee — ADR-0010), **ALB** (hourly + LCU), **RDS** (instance-hours — smallest 
 ## P3 — API gateway + idempotency
 - **Objective:** the synchronous authorization path.
 - **Deliverables:** `api` service behind ALB target group; **Service Connect** to `ledger`;
-  `Idempotency-Key` handling with a unique-constraint store; reserve-funds call.
-- **Verification:** `POST /transfers` reserves funds and returns `201 pending`; **replaying
+  `Idempotency-Key` handling with a unique-constraint store; reserve-funds call; **auth behind
+  `auth_mode`** — `seeded` (JWT login, default) or `cognito` (user pool + signup/verify/MFA,
+  JWKS validation) — with **per-request account scoping** identical across modes
+  ([ADR-0011](adr/0011-auth-identity-model.md)); full HTTP surface per [`API.md`](API.md)
+  (auth, transfers, accounts, balances, history, status).
+- **Verification:** `POST /api/transfers` reserves funds and returns `201 pending`; **replaying
   the same key returns the stored response** (no second reservation); different body + same
-  key → `409`; insufficient funds → `402`.
-- **Proves:** synchronous authorization + idempotency under client/network retries.
+  key → `409`; insufficient funds → `402`; **unauthenticated → `401`, non-owned `from_account`
+  → `403`**; `GET /api/transfers/{id}` reflects status; in `cognito` mode a **signup → verify →
+  login** round-trip issues a JWKS-validated token.
+- **Proves:** synchronous authorization + idempotency under client/network retries, behind an
+  authn boundary with account-scoped authorization.
 - **Cost & teardown:** as P1/P2.
 
 ## P4 — Async settlement + webhooks + DLQ
@@ -97,9 +104,10 @@ fee — ADR-0010), **ALB** (hourly + LCU), **RDS** (instance-hours — smallest 
 
 ## P5 — Frontend (S3 + CloudFront + WAF)
 - **Objective:** the thin UI and edge protection.
-- **Deliverables:** static Next export on **S3**; **CloudFront** distribution (ACM, OAC);
-  **CloudFront WAF** + **regional WAF on the ALB** (managed rules + rate limit on
-  `/transfers`).
+- **Deliverables:** static Next export on **S3**; **CloudFront** distribution (ACM, OAC) with
+  a **`/api/*` behavior routing to the ALB origin** (same-origin API, no CORS); typed client
+  against [`API.md`](API.md); **CloudFront WAF** + **regional WAF on the ALB** (managed rules +
+  rate limit on `/api/transfers`).
 - **Verification:** UI initiates a transfer and shows balances, history, and live settlement
   status; WAF blocks a scripted bad request / trips the rate limit on `/transfers`.
 - **Proves:** CDN + edge WAF on a public payment endpoint; end-to-end user flow.
