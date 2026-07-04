@@ -1,0 +1,32 @@
+framework:
+  - terraform
+
+download-external-modules: false
+
+skip-path:
+  - ".*/\\.terraform/.*"
+  - ".*/\\.external_modules/.*"
+
+
+skip-check:
+  - CKV_AWS_158   # Ensure CloudWatch Log Group is encrypted by KMS
+  - CKV_TF_1      # Ensure Terraform module sources use a commit hash
+
+  # ---- Add further skips below only with a reason. Examples (kept commented): ----
+  # - CKV_AWS_18   # S3 access logging — centralized in the log-archive bucket, ADR-XXXX
+  # - CKV2_AWS_6   # S3 public-access block enforced at account level, ADR-XXXX
+  # - CKV_AWS_144  # cross-region replication out of scope for an ephemeral demo stack
+
+# --- Alternative knobs (uncomment if you need them) ----------------------------
+# Run ONLY a specific allowlist of checks (everything else is ignored):
+# check:
+#   - CKV_AWS_20
+#
+# Turn hard failures into warnings without removing the check from output:
+# soft-fail: true                 # all checks become non-blocking (use sparingly)
+# soft-fail-on:                   # only these become non-blocking
+#   - CKV_AWS_144
+
+# --- Output --------------------------------------------------------------------
+compact: true
+quiet: true

@@ -44,11 +44,12 @@ can move code + infra + guardrails atomically, and CI can reason about the whole
 
 Single VPC across (at least) two AZs.
 
-- **Public subnets:** ALB, NAT Gateway. Nothing else is internet-facing.
+- **Public subnets:** ALB, **fck-nat NAT instance** (single `t4g.nano`, ASG(1), EIP — see
+  [ADR-0010](adr/0010-nat-egress.md)). Nothing else is internet-facing.
 - **Private subnets:** all ECS tasks and RDS. No public IPs on tasks.
 - **VPC endpoints** (Interface: ECR api/dkr, Secrets Manager, CloudWatch Logs, SQS;
   Gateway: S3) so image pulls, secret fetches, logs, and queue traffic stay on the AWS
-  network and **do not traverse (or bill through) the NAT Gateway**.
+  network and **do not traverse (or bill through) the NAT instance**.
 
 | Service | Ingress | Egress | Notes |
 |---------|---------|--------|-------|
@@ -57,8 +58,11 @@ Single VPC across (at least) two AZs.
 | `worker` (Go) | **none** (polls SQS) | ledger/RDS, merchant webhook endpoints | Consumes settlement queue; dispatches signed webhooks; autoscales on backlog. |
 | `otel-collector` | OTLP from services (Service Connect) | homelab (tunnel) | Receives traces/metrics, remote-writes to VictoriaMetrics, exports spans to Tempo. |
 
-Frontend is a **static** Next export served from **S3 behind CloudFront** (edge WAF);
-it calls the `api` origin behind the ALB. No frontend ECS task
+Frontend is a **static** Next export served from **S3 behind CloudFront** (edge WAF). The
+browser calls the API at **`/api/*` on the same CloudFront domain**, which path-routes to the
+ALB origin — so API calls are **same-origin (no CORS)** and the edge WAF fronts the API too;
+the regional WAF on the ALB still guards direct hits. Full HTTP contract in
+[`API.md`](API.md); identity in [ADR-0011](adr/0011-auth-identity-model.md). No frontend ECS task
 (see [ADR-0007](adr/0007-single-account-single-env-topology.md) for the topology
 context; hosting choice recorded in PLAN P5).
 
@@ -68,7 +72,7 @@ flowchart LR
     CF[CloudFront + WAF] --> S3[(S3 static site)]
   end
   User[[Browser]] --> CF
-  User -->|API calls| WAF_ALB[WAF + ALB]
+  CF -->|/api/* origin| WAF_ALB[WAF + ALB]
 
   subgraph VPC[VPC private subnets]
     WAF_ALB --> API[api gateway]
