@@ -44,11 +44,12 @@ can move code + infra + guardrails atomically, and CI can reason about the whole
 
 Single VPC across (at least) two AZs.
 
-- **Public subnets:** ALB, NAT Gateway. Nothing else is internet-facing.
+- **Public subnets:** ALB, **fck-nat NAT instance** (single `t4g.nano`, ASG(1), EIP — see
+  [ADR-0010](adr/0010-nat-egress.md)). Nothing else is internet-facing.
 - **Private subnets:** all ECS tasks and RDS. No public IPs on tasks.
 - **VPC endpoints** (Interface: ECR api/dkr, Secrets Manager, CloudWatch Logs, SQS;
   Gateway: S3) so image pulls, secret fetches, logs, and queue traffic stay on the AWS
-  network and **do not traverse (or bill through) the NAT Gateway**.
+  network and **do not traverse (or bill through) the NAT instance**.
 
 | Service | Ingress | Egress | Notes |
 |---------|---------|--------|-------|

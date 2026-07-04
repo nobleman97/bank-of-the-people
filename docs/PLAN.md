@@ -19,12 +19,12 @@ only during demo/recording windows. Everything below is `terraform destroy`-clea
 **Persistent (kept, ~free):** the homelab observability stack (VictoriaMetrics/Grafana/
 Tempo) is the central platform and is **not** torn down between sessions.
 
-**Ephemeral, created/destroyed with the ECS stack:** VPC + NAT Gateway, ALB, ECS Fargate
+**Ephemeral, created/destroyed with the ECS stack:** VPC + fck-nat NAT instance, ALB, ECS Fargate
 tasks, **RDS Postgres**, SQS, CloudFront, WAF, the in-ECS OTel Collector/vmagent transport,
 and FIS templates.
 
-**Real-spend flags** (watch these): **NAT Gateway** (hourly + per-GB — mitigated by VPC
-endpoints), **ALB** (hourly + LCU), **RDS** (instance-hours — smallest viable, e.g.
+**Real-spend flags** (watch these): **fck-nat NAT instance** (`t4g.nano` hourly, no per-GB
+fee — ADR-0010), **ALB** (hourly + LCU), **RDS** (instance-hours — smallest viable, e.g.
 `db.t4g.micro` or Aurora Serverless v2 low-min), **CloudFront** (requests/egress), **FIS**
 (per-action, P10 only).
 
@@ -50,14 +50,15 @@ endpoints), **ALB** (hourly + LCU), **RDS** (instance-hours — smallest viable,
 
 ## P1 — Network & platform
 - **Objective:** the VPC and shared platform that everything runs on.
-- **Deliverables:** VPC across 2 AZs (public/private subnets), NAT Gateway, **VPC endpoints**
+- **Deliverables:** VPC across 2 AZs (public/private subnets), **fck-nat NAT instance**
+  (`t4g.nano`, ASG(1), EIP — ADR-0010), **VPC endpoints**
   (ECR, Secrets Manager, CloudWatch Logs, SQS, S3), **ECR** repos, **encryption at rest via
   AWS-managed keys** per domain (ADR-0008), ECS Fargate cluster, ALB + HTTPS listener (ACM).
 - **Verification:** `terraform apply` is clean and idempotent (second plan is a no-op); ALB
   serves a health endpoint; image push to ECR works; endpoints resolve privately.
 - **Proves:** production networking with least-cost egress (endpoints over NAT) and
   encryption-by-default.
-- **Cost & teardown:** **NAT GW + ALB accrue** — destroy after the session.
+- **Cost & teardown:** **NAT instance + ALB accrue** — destroy after the session.
 
 ## P2 — Ledger + ephemeral RDS
 - **Objective:** the strongly-consistent double-entry core.
