@@ -1,0 +1,110 @@
+<mxfile host="app.diagrams.net" agent="bank-of-the-people docs" version="24.7.7">
+  <diagram id="botp-sync-auth" name="Sync authorization">
+    <mxGraphModel dx="1100" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1150" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== Lifelines ===== -->
+        <mxCell id="ll_C" value="Client&#10;(browser)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="140" height="780" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_A" value="api&#10;(Go)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#D5E8D4;strokeColor=#82B366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="40" width="140" height="780" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_L" value="ledger&#10;(Go)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#D5E8D4;strokeColor=#82B366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="40" width="140" height="780" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_DB" value="RDS&#10;Postgres" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#E1D5E7;strokeColor=#9673A6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="40" width="140" height="780" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_Q" value="SQS&#10;main" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="40" width="140" height="780" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Combined-fragment frames ===== -->
+        <mxCell id="alt1" value="alt  [ idempotency key ]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=150;height=26;fillColor=none;strokeColor=#666666;fontSize=11;fontStyle=2;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="70" y="250" width="965" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="alt2" value="alt  [ sufficient funds ]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=150;height=26;fillColor=none;strokeColor=#9673A6;fontSize=11;fontStyle=2;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="100" y="448" width="905" height="344" as="geometry" />
+        </mxCell>
+
+        <!-- divider lines + condition labels -->
+        <mxCell id="d1" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="70" y="330" as="sourcePoint" /><mxPoint x="1035" y="330" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="d1l" value="[ new key ]" style="text;html=1;align=left;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="80" y="332" width="120" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#B39DCC;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="100" y="664" as="sourcePoint" /><mxPoint x="1005" y="664" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="d2l" value="[ insufficient funds ]" style="text;html=1;align=left;fontSize=11;fontStyle=2;fontColor=#9673A6;" vertex="1" parent="1">
+          <mxGeometry x="110" y="666" width="150" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="r1l" value="[ key already seen ]" style="text;html=1;align=left;fontSize=11;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="80" y="272" width="150" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Messages ===== -->
+        <mxCell id="m1" value="POST /transfers (Idempotency-Key, body)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="110" y="150" as="sourcePoint" /><mxPoint x="330" y="150" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="note1" value="validate + traceparent&#10;extracted / created" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;size=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="168" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" value="lookup idempotency_key" style="html=1;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="330" y="222" as="sourcePoint" />
+            <mxPoint x="330" y="240" as="targetPoint" />
+            <Array as="points"><mxPoint x="420" y="222" /><mxPoint x="420" y="240" /></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="m3" value="200/201 stored response (replay)" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="300" as="sourcePoint" /><mxPoint x="110" y="300" as="targetPoint" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m4" value="Reserve(transfer_id, from, to, amount)  [Service Connect]" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="362" as="sourcePoint" /><mxPoint x="550" y="362" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m5" value="BEGIN" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="394" as="sourcePoint" /><mxPoint x="770" y="394" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m6" value="SELECT balance FOR UPDATE (from account)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="424" as="sourcePoint" /><mxPoint x="770" y="424" as="targetPoint" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m7" value="INSERT reservation entries (debit/credit, status=pending)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="488" as="sourcePoint" /><mxPoint x="770" y="488" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="COMMIT" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="518" as="sourcePoint" /><mxPoint x="770" y="518" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m9" value="RESERVED" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="548" as="sourcePoint" /><mxPoint x="330" y="548" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m10" value="SendMessage(settlement job, trace attrs)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="578" as="sourcePoint" /><mxPoint x="990" y="578" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="persist idempotency_key &#8594; response" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="608" as="sourcePoint" /><mxPoint x="770" y="608" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m12" value="201 Accepted (transfer_id, status=pending)" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="638" as="sourcePoint" /><mxPoint x="110" y="638" as="targetPoint" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m13" value="ROLLBACK" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="698" as="sourcePoint" /><mxPoint x="770" y="698" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m14" value="DECLINED" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="728" as="sourcePoint" /><mxPoint x="330" y="728" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m15" value="402 Declined" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="758" as="sourcePoint" /><mxPoint x="110" y="758" as="targetPoint" /></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

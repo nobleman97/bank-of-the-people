@@ -1,0 +1,115 @@
+<mxfile host="app.diagrams.net" agent="bank-of-the-people docs" version="24.7.7">
+  <diagram id="botp-async-settle" name="Async settlement">
+    <mxGraphModel dx="1300" dy="820" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1360" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== Lifelines ===== -->
+        <mxCell id="ll_Q" value="SQS&#10;main" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="140" height="790" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_W" value="worker&#10;(Go)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#D5E8D4;strokeColor=#82B366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="40" width="140" height="790" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_L" value="ledger&#10;(Go)" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#D5E8D4;strokeColor=#82B366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="40" width="140" height="790" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_DB" value="RDS&#10;Postgres" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#E1D5E7;strokeColor=#9673A6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="40" width="140" height="790" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_M" value="Merchant&#10;endpoint" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#F8CECC;strokeColor=#B85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="40" width="140" height="790" as="geometry" />
+        </mxCell>
+        <mxCell id="ll_D" value="SQS&#10;DLQ" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;collapsible=0;recursiveResize=0;outlineConnect=0;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="40" width="140" height="790" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Combined-fragment frames ===== -->
+        <mxCell id="alt1" value="alt  [ first finalize ]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=150;height=26;fillColor=none;strokeColor=#9673A6;fontSize=11;fontStyle=2;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="250" y="318" width="600" height="162" as="geometry" />
+        </mxCell>
+        <mxCell id="alt2" value="alt  [ 2xx ]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=150;height=26;fillColor=none;strokeColor=#D79B00;fontSize=11;fontStyle=2;verticalAlign=top;align=left;" vertex="1" parent="1">
+          <mxGeometry x="70" y="538" width="1210" height="272" as="geometry" />
+        </mxCell>
+
+        <!-- dividers + condition labels -->
+        <mxCell id="d1" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#B39DCC;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="250" y="410" as="sourcePoint" /><mxPoint x="850" y="410" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="d1l" value="[ duplicate delivery (at-least-once) ]" style="text;html=1;align=left;fontSize=11;fontStyle=2;fontColor=#9673A6;" vertex="1" parent="1">
+          <mxGeometry x="260" y="412" width="260" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="r1l" value="[ first finalize ]" style="text;html=1;align=left;fontSize=11;fontStyle=2;fontColor=#9673A6;" vertex="1" parent="1">
+          <mxGeometry x="260" y="340" width="150" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#E0B060;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="70" y="630" as="sourcePoint" /><mxPoint x="1280" y="630" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="d2l" value="[ non-2xx / timeout ]" style="text;html=1;align=left;fontSize=11;fontStyle=2;fontColor=#D79B00;" vertex="1" parent="1">
+          <mxGeometry x="80" y="632" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="r2l" value="[ 2xx ]" style="text;html=1;align=left;fontSize=11;fontStyle=2;fontColor=#D79B00;" vertex="1" parent="1">
+          <mxGeometry x="80" y="560" width="120" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- ===== Messages ===== -->
+        <mxCell id="m1" value="ReceiveMessage (long poll)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="150" as="sourcePoint" /><mxPoint x="110" y="150" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="note1" value="restore traceparent&#10;from message attributes" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;size=12;" vertex="1" parent="1">
+          <mxGeometry x="250" y="168" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m2" value="Finalize(transfer_id)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="230" as="sourcePoint" /><mxPoint x="550" y="230" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m3" value="BEGIN" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="262" as="sourcePoint" /><mxPoint x="770" y="262" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m4" value="INSERT settlement entry (UNIQUE transfer_id)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="292" as="sourcePoint" /><mxPoint x="770" y="292" as="targetPoint" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m5" value="mark transfer settled; COMMIT" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="356" as="sourcePoint" /><mxPoint x="770" y="356" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m6" value="SETTLED" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="386" as="sourcePoint" /><mxPoint x="330" y="386" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m7" value="unique violation &#8594; ROLLBACK" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="438" as="sourcePoint" /><mxPoint x="770" y="438" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m8" value="ALREADY_SETTLED (idempotent no-op)" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="550" y="464" as="sourcePoint" /><mxPoint x="330" y="464" as="targetPoint" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m9" value="POST webhook (HMAC-SHA256 signature)" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="512" as="sourcePoint" /><mxPoint x="990" y="512" as="targetPoint" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m10" value="200" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="990" y="576" as="sourcePoint" /><mxPoint x="330" y="576" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="m11" value="DeleteMessage" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="606" as="sourcePoint" /><mxPoint x="110" y="606" as="targetPoint" /></mxGeometry>
+        </mxCell>
+
+        <mxCell id="m12" value="5xx" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="990" y="660" as="sourcePoint" /><mxPoint x="330" y="660" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="note2" value="leave message &#8594; SQS redelivers&#10;after visibility timeout (backoff)" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;size=12;" vertex="1" parent="1">
+          <mxGeometry x="238" y="676" width="184" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="m13" value="(no delete)" style="html=1;endArrow=open;dashed=1;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="330" y="732" as="sourcePoint" /><mxPoint x="110" y="732" as="targetPoint" /></mxGeometry>
+        </mxCell>
+        <mxCell id="note3" value="after maxReceiveCount &#8594; DLQ" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=10;size=12;" vertex="1" parent="1">
+          <mxGeometry x="30" y="748" width="160" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="m14" value="move poison message" style="html=1;endArrow=block;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry"><mxPoint x="110" y="792" as="sourcePoint" /><mxPoint x="1210" y="792" as="targetPoint" /></mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

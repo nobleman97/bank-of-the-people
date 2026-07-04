@@ -1,0 +1,109 @@
+# ==============================================================================
+# bank-of-the-people — .gitignore
+# Monorepo: Go services (services/), Terraform (infra/), Next.js frontend (frontend/).
+# Security posture: no plaintext secrets in git (see docs/SECURITY.md); gitleaks gates
+# every PR. Secret-bearing and local-only files are excluded by default here as a
+# second line of defense — gitleaks is the enforcing gate, this is the seatbelt.
+# ==============================================================================
+
+# ---- Secrets / credentials (never commit — belongs in Secrets Manager / SSM) ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+.pgpass
+aws.json
+credentials
+# cosign image-signing private key (public key may be committed; private key never)
+cosign.key
+*.cosign.key
+
+# ---- Terraform ----
+# Ephemeral working dirs, state, and crash logs.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+# Local-only var files and CLI config that tend to accumulate secrets or overrides.
+# NOTE: committed per-env inputs live in infra/live/<env>/*.tfvars and are intentionally
+# tracked (non-secret env definitions). Only local/auto/secret var files are ignored.
+*.local.tfvars
+*.local.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+# Keep the provider lock file tracked — do NOT ignore .terraform.lock.hcl.
+
+# ---- Go (services/{api,ledger,worker}) ----
+/bin/
+**/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.out
+coverage.txt
+profile.cov
+# vendor/ is optional with modules; uncomment if you choose not to vendor.
+# vendor/
+
+# ---- Node / Next.js (frontend/) ----
+node_modules/
+.pnpm-store/
+.next/
+out/
+build/
+dist/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+.eslintcache
+
+# ---- Security tooling output (reports are artifacts, not source) ----
+gitleaks-report.json
+trivy-results.*
+*.sarif
+sbom.json
+sbom.spdx.json
+sbom.cdx.json
+
+# ---- OS / editor ----
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+!.vscode/extensions.json
+
+# ---- Misc local ----
+.direnv/
+tmp/
+.cache/
+*.log

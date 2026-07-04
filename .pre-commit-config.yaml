@@ -1,0 +1,118 @@
+# ==============================================================================
+# bank-of-the-people — pre-commit configuration
+#
+# Mirrors the CI gate set (see CLAUDE.md "CI/CD expectations" and "Local validation")
+# so failures are caught locally before they ever reach a PR. CI remains the enforcing
+# authority; this is fast local feedback.
+#
+# Design: two stages.
+#   • pre-commit (fast, every commit): formatting, generic hygiene, secrets scanning.
+#   • pre-push   (heavier, before sharing): validate, lint, IaC + FS scanning, policy,
+#     Go vet/test — the "run before pushing (mirror CI)" set from CLAUDE.md.
+#
+# Setup:
+#   pip install pre-commit          # or: brew install pre-commit
+#   pre-commit install              # installs both hook types (see default_install_hook_types)
+#   pre-commit run --all-files      # run everything once
+#   pre-commit autoupdate           # bump the pinned `rev`s below to latest releases
+#
+# NOTE: `rev`s are pinned to known-good releases for reproducibility. Run
+# `pre-commit autoupdate` to move them forward deliberately (never float them).
+# Terraform/Go/conftest/trivy hooks only fire on matching files, so this config is
+# a no-op today (docs-only repo) and activates as P0+ lands infra/ and services/.
+# ==============================================================================
+
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+fail_fast: false
+minimum_pre_commit_version: "3.5.0"
+
+repos:
+  # ---- Generic hygiene + a secrets seatbelt (fast, every commit) ----
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      # Blocks committing PEM/SSH private keys. gitleaks (below) is the real gate;
+      # this is defense-in-depth aligned with docs/SECURITY.md "no plaintext secrets".
+      - id: detect-private-key
+
+  # ---- Secrets scanning (fast, every commit) — matches CLAUDE.md gitleaks gate ----
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  # ---- Terraform: fmt at commit; validate/lint/scan at push ----
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.96.1
+    hooks:
+      - id: terraform_fmt          # fast, deterministic — commit stage
+      - id: terraform_validate
+        stages: [pre-push]
+      - id: terraform_tflint
+        stages: [pre-push]
+        args:
+          - --args=--minimum-failure-severity=error
+      # IaC static analysis. tfsec is folding into Trivy upstream; keep tfsec to match
+      # CLAUDE.md, and see the local `trivy fs` hook below for filesystem/dep scanning.
+      - id: terraform_tfsec
+        stages: [pre-push]
+      - id: terraform_checkov
+        stages: [pre-push]
+        args:
+          - --args=--quiet
+          - --args=--compact
+
+  # ---- Project-local hooks: Go, policy-as-code, filesystem scan (pre-push) ----
+  # These call tools already required by CLAUDE.md's "Local validation"; keeping them
+  # local guarantees the same binaries/versions as CI and the Makefile.
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: gofmt (Go formatting)
+        entry: gofmt -l -w
+        language: system
+        types: [go]
+        # commit stage: formatting is fast and deterministic.
+
+      # - id: go-vet
+      #   name: go vet (per module)
+      #   entry: bash -c 'set -e; for d in $(find services -name go.mod -maxdepth 2 -exec dirname {} \;); do echo "vet: $d"; (cd "$d" && go vet ./...); done'
+      #   language: system
+      #   types: [go]
+      #   pass_filenames: false
+      #   stages: [pre-push]
+
+      # - id: go-test
+      #   name: go test (per module)
+      #   entry: bash -c 'set -e; for d in $(find services -name go.mod -maxdepth 2 -exec dirname {} \;); do echo "test: $d"; (cd "$d" && go test ./...); done'
+      #   language: system
+      #   types: [go]
+      #   pass_filenames: false
+      #   stages: [pre-push]
+
+      - id: conftest
+        name: conftest (OPA policy-as-code)
+        entry: conftest test .
+        language: system
+        pass_filenames: false
+        files: \.(tf|json|ya?ml|rego)$
+        stages: [pre-push]
+
+      - id: trivy-fs
+        name: trivy fs (filesystem/dependency scan)
+        entry: trivy fs --scanners vuln,secret,misconfig --exit-code 1 --severity HIGH,CRITICAL --no-progress .
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

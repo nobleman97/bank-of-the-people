@@ -1,0 +1,68 @@
+# ADR-0007: Single AWS account, single live environment (env-parameterized modules)
+
+- Status: Accepted
+- Date: 2026-07-04
+- Deciders: David Omokhodion
+- Related: ADR-0002 (Compute), ADR-0005 (Ledger datastore), SECURITY.md
+
+## Context
+
+The original brief called for "at least two environments (dev, prod)". The project is also a
+cost-conscious, ephemeral portfolio piece run on a spin-up / capture-proof / tear-down loop,
+by a single operator. Standing up two permanent environments (or a multi-account
+Organization landing zone) multiplies fixed cost — NAT Gateways, ALBs, RDS, CloudFront — and
+setup effort, for little incremental demonstration value at this scale.
+
+We must reconcile the "two environments / dev→prod promotion" requirement with the cost and
+lifecycle constraints.
+
+## Decision
+
+Run a **single AWS account** with a **single live environment at a time**, while keeping all
+Terraform **modules env-parameterized** so the multi-environment promotion path is fully
+demonstrable in code.
+
+- `infra/modules/*` are environment-agnostic; `infra/live/<env>/` (`dev`, `prod`) supply
+  per-env inputs via tfvars / workspaces and separate state keys.
+- The CI/CD pipeline supports `dev → prod` promotion (same immutable image, promoted by
+  environment-scoped apply with approval gates), even though only one environment is
+  **materialized** during a given demo/recording session to control cost.
+- Environment isolation within the account is enforced by naming (`botp-<env>-*`), tags,
+  distinct state keys, and scoped IAM — not by account boundaries.
+
+## Rationale
+
+The requirement's *intent* — reproducible environments, a real promotion path, no
+snowflake prod — is satisfied by env-parameterized modules and a promotion-capable pipeline.
+What we consciously drop is running two environments **simultaneously and permanently**,
+which is a pure cost decision, not an architectural one. Keeping the code multi-env means
+"stand up a second environment" is a tfvars/workspace change, not a rewrite.
+
+## Consequences
+
+Positive:
+- Minimal fixed cost; only one environment bills at a time; clean teardown.
+- Promotion mechanics (image immutability, env-scoped apply, approval gates) are real and
+  demonstrable.
+- Modules stay honestly reusable — the second environment is a config away.
+
+Negative / risks:
+- No account-boundary separation-of-duties (a real control in regulated fintech). This is
+  the main gap versus production and is called out explicitly, not hidden.
+- Single account means a broad blast radius for a misconfigured credential; mitigated by
+  least-privilege IAM, OIDC-only access, and scoped state (see SECURITY.md).
+
+## Production equivalent
+
+In a regulated setting this would be a **multi-account AWS Organization**: separate dev and
+prod accounts (often per-workload), a management/shared-services account for state, ECR,
+and OIDC, SCP guardrails, and centralized logging. Stating this keeps the single-account
+choice legible as an intentional, cost-driven portfolio decision rather than a blind spot.
+
+## Alternatives considered
+
+- **Two permanent environments in one account:** closer to the letter of the brief, but
+  doubles fixed cost with little added demonstration value at this scale.
+- **Multi-account Organization (2–3 accounts):** the strongest production/SOC 2 story, but
+  the most setup and cross-account IAM plumbing — disproportionate for an ephemeral solo
+  portfolio project.
