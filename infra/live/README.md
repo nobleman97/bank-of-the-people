@@ -6,12 +6,27 @@ Each directory here is a **separate Terraform root** with its own remote-state k
 | Root | State key | Scope | Introduced |
 |------|-----------|-------|------------|
 | `global/` | `botp/global/iam-oidc` | Account-global: GitHub OIDC provider + CI `plan`/`apply` roles. One per account. | **P0** |
-| `dev/<component>/` | `botp/dev/<component>` | Per-component dev roots (network, ecs, rds, …). | P1+ |
+| `global/ecr/` | `botp/global/ecr` | Account-global: shared **ECR** repos (api, ledger, worker). Persistent — a digest built once promotes across envs (ADR-0007). | **P1** |
+| `global/acm/` | `botp/global/acm` | Account-global: free public **ACM cert** (`botp.cognitaid.com` + wildcard). Persistent — issued/validated once (manual Cloudflare DNS), reused by the ALB and CloudFront (ADR-0013). | **P1** |
+| `dev/network/` | `botp/dev/network` | VPC, subnets, fck-nat egress, VPC endpoints. | **P1** |
+| `dev/platform/` | `botp/dev/platform` | ECS Fargate cluster + public ALB (reads `dev/network` via remote state). | **P1** |
+| `dev/<component>/` | `botp/dev/<component>` | Further per-component dev roots (rds, messaging, services, …). | P2+ |
 | `prod/<component>/` | `botp/prod/<component>` | Per-component prod roots; same modules, prod tfvars. | P1+ |
 
-Reusable modules live in `infra/modules/<name>` and are consumed by these roots.
-For P0 the only root is `global/`, which references the two **public**
-`terraform-aws-modules/iam/aws` submodules rather than a hand-rolled OIDC module.
+Reusable modules live in `infra/modules/<name>` and are consumed by these roots. Each root
+is a separate Terraform root even when nested (e.g. `global/` and `global/ecr/` are two
+independent roots with distinct state keys — Terraform reads only the `.tf` in the current
+directory, not recursively). The `global/ecr/` component was added nested rather than
+migrating the already-applied P0 OIDC state.
+
+Most roots compose **well-maintained public modules** (`terraform-aws-modules/*`,
+`RaJiska/fck-nat`) rather than hand-rolled resources.
+
+## Inter-component wiring
+
+Downstream roots read upstream outputs via `terraform_remote_state` against the S3 backend
+(e.g. `dev/platform` reads `botp/dev/network`). Apply order within an env: `network` →
+`platform` → (later) data/services.
 
 ## Backend
 
