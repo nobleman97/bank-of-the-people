@@ -70,9 +70,12 @@ repos:
         stages: [pre-push]
       - id: terraform_checkov
         stages: [pre-push]
+        # Load the repo config (skip-check / skip-path / output flags) so local runs
+        # suppress exactly what CI does. .checkov.yaml already sets --quiet/--compact,
+        # so those live there now instead of here. Path is relative to the repo root,
+        # where pre-commit executes the hook.
         args:
-          - --args=--quiet
-          - --args=--compact
+          - --args=--config-file=.checkov.yaml
 
   # ---- Project-local hooks: Go, policy-as-code, filesystem scan (pre-push) ----
   # These call tools already required by CLAUDE.md's "Local validation"; keeping them

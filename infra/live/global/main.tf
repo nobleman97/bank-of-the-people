@@ -55,7 +55,7 @@ module "apply_role" {
 
   enable_github_oidc = true
   oidc_subjects = [
-    "${local.repo}:ref:refs/heads/main",
+    "${local.repo}:ref:refs/heads/master",
     "${local.repo}:environment:dev",
     "${local.repo}:environment:prod",
   ]

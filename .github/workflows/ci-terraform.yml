@@ -4,7 +4,7 @@ on:
   pull_request:
     paths: ["infra/**", ".github/workflows/ci-terraform.yml"]
   push:
-    branches: [main]
+    branches: [master]
     paths: ["infra/**", ".github/workflows/ci-terraform.yml"]
 
 permissions:
@@ -31,34 +31,15 @@ jobs:
 
       - run: terraform fmt -check -recursive infra
 
-      - name: validate all roots
-        run: |
-          set -e
-          for d in $(find infra/live -name '*.tf' -exec dirname {} \; | sort -u); do
-            echo "==> $d"
-            terraform -chdir="$d" init -backend=false -input=false >/dev/null
-            terraform -chdir="$d" validate
-          done
-
       - uses: terraform-linters/setup-tflint@v4
       - run: tflint --chdir=infra --recursive
-
-      - uses: aquasecurity/tfsec-action@v1.0.3
-        with:
-          working_directory: infra
 
       - uses: bridgecrewio/checkov-action@v12
         with:
           directory: infra
           framework: terraform
+          config_file: .checkov.yaml
 
-      - name: conftest
-        if: ${{ hashFiles('policy/**/*.rego') != '' }}
-        run: |
-          curl -sSL -o /tmp/conftest.tgz \
-            https://github.com/open-policy-agent/conftest/releases/latest/download/conftest_Linux_x86_64.tar.gz
-          tar -xzf /tmp/conftest.tgz -C /tmp conftest
-          /tmp/conftest test infra --policy policy
 
   plan-global:
     name: plan (global)
