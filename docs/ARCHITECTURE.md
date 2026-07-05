@@ -53,7 +53,7 @@ Single VPC across (at least) two AZs.
 
 | Service | Ingress | Egress | Notes |
 |---------|---------|--------|-------|
-| `api` (Go) | ALB target group (HTTPS) | ledger (Service Connect), SQS | Public payments gateway. WAF web ACL attached to the ALB. |
+| `api` (Go) | ALB target group (HTTP; TLS terminates at the ALB via ACM on `botp.cognitaid.com` — ADR-0013) | ledger (Service Connect), SQS | Public payments gateway. WAF web ACL attached to the ALB. |
 | `ledger` (Go) | **internal only** via ECS Service Connect / Cloud Map | RDS Postgres | No ALB, no public route. Sole writer to the ledger schema. |
 | `worker` (Go) | **none** (polls SQS) | ledger/RDS, merchant webhook endpoints | Consumes settlement queue; dispatches signed webhooks; autoscales on backlog. |
 | `otel-collector` | OTLP from services (Service Connect) | homelab (tunnel) | Receives traces/metrics, remote-writes to VictoriaMetrics, exports spans to Tempo. |

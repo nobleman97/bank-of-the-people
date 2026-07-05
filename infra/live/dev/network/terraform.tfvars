@@ -1,0 +1,9 @@
+aws_region        = "us-east-1"
+environment       = "dev"
+owner             = "david-omokhodion"
+cost_center       = "portfolio"
+vpc_cidr          = "10.20.0.0/16"
+az_count          = 2
+egress_mode       = "instance"
+nat_instance_type = "t4g.nano"
+endpoint_az_count = 1

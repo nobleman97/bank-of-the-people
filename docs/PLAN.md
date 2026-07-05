@@ -52,10 +52,14 @@ fee — ADR-0010), **ALB** (hourly + LCU), **RDS** (instance-hours — smallest 
 - **Objective:** the VPC and shared platform that everything runs on.
 - **Deliverables:** VPC across 2 AZs (public/private subnets), **fck-nat NAT instance**
   (`t4g.nano`, ASG(1), EIP — ADR-0010), **VPC endpoints**
-  (ECR, Secrets Manager, CloudWatch Logs, SQS, S3), **ECR** repos, **encryption at rest via
-  AWS-managed keys** per domain (ADR-0008), ECS Fargate cluster, ALB + HTTPS listener (ACM).
-- **Verification:** `terraform apply` is clean and idempotent (second plan is a no-op); ALB
-  serves a health endpoint; image push to ECR works; endpoints resolve privately.
+  (ECR, Secrets Manager, CloudWatch Logs, SQS, S3), **ECR** repos and a **free public ACM
+  cert** (`botp.cognitaid.com` + wildcard) both in the `global/` scope — shared/persistent so
+  a digest and a cert are issued once and reused across envs (ADR-0007, ADR-0013), **encryption
+  at rest via AWS-managed keys** per domain (ADR-0008), ECS Fargate cluster, **ALB + HTTPS
+  listener** (ACM cert, 80→443 redirect; validated via manual Cloudflare DNS — ADR-0013).
+- **Verification:** `terraform apply` is clean and idempotent (second plan is a no-op); the
+  ALB serves a health endpoint over **HTTPS** at `https://botp.cognitaid.com` (valid cert, 80
+  redirects to 443); image push to ECR works; endpoints resolve privately.
 - **Proves:** production networking with least-cost egress (endpoints over NAT) and
   encryption-by-default.
 - **Cost & teardown:** **NAT instance + ALB accrue** — destroy after the session.
