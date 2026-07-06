@@ -108,3 +108,10 @@ module "alb" {
 
   listeners = local.alb_listeners
 }
+
+# ECS Service Connect namespace shared by every internal service on this cluster
+# (ledger now; api/worker in P3/P4 register into the same namespace).
+resource "aws_service_discovery_http_namespace" "internal" {
+  name        = "${local.name_prefix}-internal"
+  description = "ECS Service Connect namespace for internal service-to-service calls."
+}

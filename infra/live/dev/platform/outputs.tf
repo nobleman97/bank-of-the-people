@@ -22,3 +22,8 @@ output "alb_security_group_id" {
   description = "ALB security group ID (targets allow ingress from this in later phases)."
   value       = module.alb.security_group_id
 }
+
+output "service_connect_namespace_arn" {
+  description = "ARN of the internal Service Connect namespace. Consumed by dev/services/<name> roots."
+  value       = aws_service_discovery_http_namespace.internal.arn
+}

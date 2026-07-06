@@ -1,0 +1,21 @@
+# BuildKit honors <dockerfile>.dockerignore for `docker build -f services/ledger/Dockerfile .`
+# (a context-root .dockerignore or this file — NOT services/ledger/.dockerignore). BuildKit
+# already only transfers COPY-referenced paths, so this mainly keeps test files and any local
+# dev artifacts out of the build stage.
+**/*_test.go
+.git/
+.github/
+.claude/
+.superpowers/
+.venv/
+frontend/
+infra/
+docs/
+policy/
+assets/
+services/api/
+services/worker/
+**/*.tfstate
+**/*.tfstate.*
+**/.terraform/
+**/.env

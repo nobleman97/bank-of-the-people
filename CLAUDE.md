@@ -1,7 +1,24 @@
-# CLAUDE.md — working conventions
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Conventions for building `bank-of-the-people`. These are binding defaults; deviations must
 be justified in an ADR. See `docs/` for architecture, SLOs, security, and the phased plan.
+
+## Current state (as of P0)
+
+Only [P0](docs/PLAN.md) is implemented: `infra/live/global` (GitHub OIDC provider + CI
+`plan`/`apply` roles, via the public `terraform-aws-modules/iam/aws` submodules — see
+`infra/live/README.md`). Everything else is scaffolded but empty:
+
+- `services/{api,ledger,worker}` and `frontend/` contain only `.gitkeep` — no Go modules,
+  no application code yet. `go test ./...` etc. have nothing to run until P2/P3/P4 land.
+- `policy/` (OPA/Conftest) is empty; `conftest test` is a no-op until policies exist.
+- `infra/modules/` doesn't exist yet — it's created starting P1, when the first reusable
+  module (`network`) is written; `infra/live/dev|prod` roots also start at P1.
+
+Don't assume services, modules, or policies exist — check before referencing paths from
+the plan below; most of `docs/PLAN.md`'s phases (P1–P11) describe work not yet started.
 
 ## Project shape
 
@@ -64,15 +81,22 @@ Run before pushing (mirror CI):
 terraform fmt -check -recursive
 terraform validate
 tflint
-tfsec .            # or: checkov -d .
+tfsec .            # or: checkov -d . --config-file=.checkov.yaml
 conftest test .    # OPA policies in policy/
 gitleaks detect --no-banner
 trivy fs .         # and: trivy image <ref> after a build
 go test ./...      # per service
 ```
 
-CI (`.github/workflows/ci.yml`) runs these same commands directly — there is no Makefile
-wrapper. Keep the CI steps and this list in sync so local and pipeline runs stay identical.
+CI runs across two workflows — `.github/workflows/ci-terraform.yml` (fmt/validate/tflint/
+checkov, then `plan` on the `global` root via the read-only OIDC role) and
+`.github/workflows/ci-security.yml` (gitleaks, `trivy fs`) — there is no Makefile wrapper.
+Keep the CI steps and this list in sync so local and pipeline runs stay identical.
+
+`.pre-commit-config.yaml` mirrors this same gate set locally in two stages: `pre-commit`
+(fast — fmt, gitleaks, generic hygiene) and `pre-push` (heavier — validate, tflint, tfsec,
+checkov, conftest, trivy fs). Install once with `pre-commit install`; the Go hooks
+(`go vet`/`go test`) are present but commented out until a service has a `go.mod`.
 
 ## Documentation discipline
 
